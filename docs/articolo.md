@@ -1,4 +1,7 @@
 # Certi che il nuovo servizio web sia più veloce?
+_Perché confrontare i tempi medi delle risposte ottenute nei test di carico non è una buona idea_
+
+![](img/Gemini_Generated_Image_Banner.png)
 
 Quando si testa per il carico una nuova versione di un servizio web, spesso si confrontano i tempi medi di risposta con quelli della versione precedente. Tuttavia, basarsi solo sulle medie può essere fuorviante, perché non considera il ruolo del caso nei risultati.
 
