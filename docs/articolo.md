@@ -1,5 +1,5 @@
 # Certi che il nuovo servizio web sia più veloce?
-_Perché confrontare i tempi medi delle risposte ottenute nei test di carico non è una buona idea_
+_Perché confrontare i tempi medi delle risposte ottenute nei test di carico non è una buona idea._
 
 ![](img/Gemini_Generated_Image_Banner.png)
 

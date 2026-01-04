@@ -2,6 +2,8 @@
 
 Statistical analysis scripts for comparing web service performance, as described in the article "Is the New Web Service Really Faster?".
 
+![](docs/img/Gemini_Generated_Image_Banner.png)
+
 ## Project Structure
 
 ```
