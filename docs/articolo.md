@@ -61,6 +61,8 @@ Per arginare le dipendenze legate allo stato del sistema si dovrebbe effettuare 
 
 Riguardo alle correlazioni indotte della modalità di campionamento, invece di utilizzare l'intera sequenza di chiamate effettuata in un intervallo continuo di tempo, si potrebbe utilizza una richiesta ogni k oppure selezionarle in modo casuale (subsampling). Alternativamente o in aggiunta, si effettuano diverse chiamate in finestre temporali diversi, si calcolano valori aggregati in queste finestre considerandole come unità campionarie.
 
+![](img/permutation_time_series.png)
+
 ### Normalità
 I tempi di risposta dei servizi web raramente seguono una distribuzione normale: tipicamente hanno code più pesanti a destra a causa di outlier con tempi molto lunghi. Fortunatamente il teorema del limite centrale ci viene in aiuto.
 
@@ -79,8 +81,6 @@ A differenza del t-test standard, il test di Welch calcola i gradi di libertà u
 In Python, il test di Welch si implementa facilmente usando scipy specificando il parametro `equal_var=False`:
 
 ```python
-from scipy.stats import ttest_ind
-
 # df_old e df_new sono DataFrame pandas con colonna 'response_time'
 t_stat, p_value = ttest_ind(df_old['response_time'], df_new['response_time'], equal_var=False)
 print(f"p-value: {p_value:.4f} - {'Nuova versione significativamente più veloce' if p_value < 0.05 else 'Nessuna differenza significativa'}")
