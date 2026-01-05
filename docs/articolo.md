@@ -1,13 +1,21 @@
 # Certi che il nuovo servizio web sia più veloce?
-_Perché confrontare i tempi medi delle risposte ottenute nei test di carico non è una buona idea._
+_Perché confrontare i tempi medi di risposta dei test di carico non è una così buona idea._
 
 ![](img/Gemini_Generated_Image_Banner.png)
 
-Quando si testa per il carico una nuova versione di un servizio web, spesso si confrontano i tempi medi di risposta con quelli della versione precedente. Tuttavia, basarsi solo sulle medie può essere fuorviante, perché non considera il ruolo del caso nei risultati.
+"La nuova versione risponde in media 6 millisecondi più velocemente. Deploy in produzione!"
 
-Ad esempio, se ripetiamo i test e raccogliamo nuovi campioni di dati, otterremo medie diverse ogni volta. Questo significa che la differenza osservata tra i due servizi potrebbe dipendere sia dalla reale velocità, sia dalla semplice fortuna nel campionamento.
+Quante volte abbiamo preso decisioni simili basandoci semplicemente sul confronto delle medie nei test di carico? Il problema è che questo approccio nasconde due insidie fondamentali: il **ruolo del caso** e l'**effetto del campionamento**.
 
-Per esprimere un giudizio razionale serve un minimo di statistica.
+Immaginate di lanciare una moneta 20 volte e ottenere 13 teste. La moneta è truccata? O avete semplicemente avuto fortuna? Lo stesso vale per i test di performance: se la vostra nuova versione del servizio mostra tempi di risposta più bassi, quanto di questo miglioramento è reale e quanto è solo variabilità casuale?
+
+Il caso non è l'unico problema. Il **modo** in cui raccogliete i dati influenza pesantemente i risultati. Effettuare 1000 chiamate consecutive al servizio in 10 secondi non produce osservazioni indipendenti: lo stato condiviso del sistema (cache, pool di connessioni, garbage collection) crea correlazioni artificiali. Una chiamata lenta tende a essere seguita da altre chiamate lente, non perché il servizio sia intrinsecamente più lento, ma per effetti di congestione temporanea.
+
+Questi problemi non sono solo tecnicismi accademici. Portano a decisioni sbagliate: promuovere in produzione "miglioramenti" inesistenti o, peggio, scartare ottimizzazioni reali perché i test non le hanno evidenziate con sufficiente chiarezza.
+
+In questo articolo esploreremo come applicare test statistici appropriati partendo dal classico t-test fino ad approcci più robusti come il test di Welch e il permutation test. Vedremo anche strategie pratiche per migliorare il campionamento e ridurre le correlazioni spurie nei dati.
+
+**Tutti gli esempi di codice e i dati utilizzati sono disponibili nel repository GitHub:** [github.com/nicolinux72/statistical-tests.git](https://github.com/nicolinux72/statistical-tests.git)
 
 
 ## I test statistici (molto molto brevemente)
@@ -52,7 +60,7 @@ Torniamo alle ipotesi che ci consentono di usare il t test:
 *	__Normalità__ le distribuzioni di probabilità devono essere normali, la famosa distribuzione di Gauss a forma di campana.
 *	__Omoschedasticità__ le due popolazioni devono avere la stessa varianza.
 
-Scendiamo nel dettaglio:
+Scendiamo nel dettaglio.
 
 ### Indipendenza
 I tempi di risposta di un servizio web raramente sono osservazioni indipendenti: lo stato del sistema (pod, cache, rete, …) è condiviso tra chiamate successive, creando correlazione. Inoltre, effettuare N chiamate consecutive in un breve intervallo, dunque la modalità più comune di campionamento, introduce autocorrelazione artificiale: a una chiamata lenta è più probabile che ne segua un'altra altrettanto lenta.
@@ -107,7 +115,6 @@ def statistic(x, y):
 
 result = permutation_test((old_blocks, new_blocks), statistic, 
                          permutation_type='independent', n_resamples=10000)
-print(f"p-value: {result.pvalue:.4f} - {'Differenza significativa' if result.pvalue < 0.05 else 'Nessuna differenza'}")
 ```
 
 ![](img/permutation_test_results.png)
@@ -148,3 +155,52 @@ In molte aziende, i risultati dei test di carico vengono utilizzati direttamente
 Abbiamo mostrato come applicare un approccio più rigoroso utilizzando test statistici appropriati. Il test di Welch rappresenta una scelta solida quando si possono ottenere campioni ragionevolmente indipendenti attraverso strategie di campionamento accorte, mentre il permutation test offre maggiore robustezza quando l'indipendenza è difficile da garantire. Entrambi gli approcci permettono di quantificare la probabilità che una differenza osservata sia dovuta al caso piuttosto che a una reale differenza di performance.
 
 Gli esempi di codice forniti possono essere adattati facilmente ai propri contesti specifici, permettendo di trasformare i dati grezzi dei test di carico in evidenze statisticamente fondate. In definitiva, dedicare attenzione alla progettazione del campionamento e all'analisi statistica dei risultati non è solo un esercizio accademico: è ciò che distingue una decisione basata su impressioni da una decisione basata sui dati.
+
+__Nota dell'autore:__ ho scritto questo articolo con l'assistenza dei LLM, in particolare Claude, ChatGpt e Gemini CLI. Come tutti, adotto il vibe code da un pezzo ma non mi ero ancora spinto fino alla redazione di un articolo divulgativo. È stato divertente :-)  
+
+## Bibliografia
+
+### Testi classici
+
+**Fisher, R. A.** (1935). *The Design of Experiments*. Oliver and Boyd, Edinburgh. L'opera fondamentale che ha introdotto i concetti di randomizzazione e test di significatività, ponendo le basi della moderna statistica inferenziale.
+
+**Student** (Gosset, W. S.) (1908). "The probable error of a mean". *Biometrika*, 6(1), 1-25. L'articolo originale che introduce la distribuzione t, ancora oggi essenziale per l'analisi statistica con campioni di dimensione limitata.
+
+**Tukey, J. W.** (1977). *Exploratory Data Analysis*. Addison-Wesley. Opera seminale che ha rivoluzionato l'approccio all'analisi dei dati, enfatizzando l'importanza della visualizzazione e dell'esplorazione prima dell'inferenza formale.
+
+**Welch, B. L.** (1947). "The generalization of 'Student's' problem when several different population variances are involved". *Biometrika*, 34(1-2), 28-35. L'articolo che introduce il test di Welch e l'approssimazione di Welch-Satterthwaite per i gradi di libertà.
+
+**Efron, B.** (1979). "Bootstrap methods: Another look at the jackknife". *The Annals of Statistics*, 7(1), 1-26. L'articolo fondamentale sul bootstrap, tecnica che ha trasformato l'analisi statistica permettendo di stimare distribuzioni campionarie senza assunzioni parametriche.
+
+### Testi moderni
+
+**Good, P. I.** (2005). *Permutation, Parametric and Bootstrap Tests of Hypotheses* (3rd ed.). Springer. Trattazione completa e accessibile dei test di permutazione e del bootstrap, con particolare attenzione alle applicazioni pratiche.
+
+**Davison, A. C., & Hinkley, D. V.** (1997). *Bootstrap Methods and Their Application*. Cambridge University Press. Riferimento autorevole per l'applicazione del bootstrap in contesti reali, con esempi e case study approfonditi.
+
+**Wasserstein, R. L., & Lazar, N. A.** (2016). "The ASA statement on p-values: Context, process, and purpose". *The American Statistician*, 70(2), 129-133. Importante statement dell'American Statistical Association sull'uso corretto e i limiti dei p-value, fondamentale per interpretare correttamente i test statistici.
+
+**VanderPlas, J.** (2016). *Python Data Science Handbook*. O'Reilly Media. Guida pratica all'analisi dei dati in Python, con copertura di scipy.stats e tecniche di resampling. Disponibile gratuitamente su https://jakevdp.github.io/PythonDataScienceHandbook/
+
+### Risorse web
+
+**SciPy Documentation - Statistical functions** (scipy.stats)  
+https://docs.scipy.org/doc/scipy/reference/stats.html  
+Documentazione ufficiale completa delle funzioni statistiche di SciPy, inclusi ttest_ind, permutation_test e bootstrap.
+
+**Towards Data Science** - "Understanding the t-test"  
+https://towardsdatascience.com/  
+Piattaforma con numerosi articoli divulgativi sui test statistici e le loro applicazioni pratiche in data science.
+
+**Real Python** - "Statistics in Python"  
+https://realpython.com/python-statistics/  
+Tutorial pratici sull'applicazione della statistica in Python, con esempi di codice riproducibili.
+
+**CrossValidated** (StackExchange)  
+https://stats.stackexchange.com/  
+Comunità attiva di statistici dove trovare discussioni approfondite su test statistici, assunzioni e interpretazione dei risultati.
+
+**Performance Testing Guidance** - Microsoft Azure  
+https://learn.microsoft.com/en-us/azure/architecture/  
+Linee guida di Microsoft sulla progettazione e interpretazione di test di performance per applicazioni cloud.
+
