@@ -41,6 +41,7 @@ bootstrap:
 
 docx:
 	cd docs && pandoc articolo.md -o articolo.docx
+	cd docs && pandoc article.md -o article.docx
 
 # Run all scripts
 all: binomial ttest welch permutation bootstrap
